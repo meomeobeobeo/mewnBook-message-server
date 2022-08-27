@@ -10,7 +10,7 @@ app.use(morgan('combined'));
 
 const server = http.createServer(app);
 const io = new Server(server, {
-    cors: 'http://localhost:3000',
+    cors: 'https://meo-book-client.vercel.app',
     maxHttpBufferSize: 1e8
 })
 
