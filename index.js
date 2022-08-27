@@ -1,20 +1,64 @@
-const io = require('socket.io')(process.env.PORT||8900, {
-    cors: {
-        origin: 'http://localhost:3000',
-    },
+import express from 'express';
+import morgan from 'morgan'
+import { Server } from 'socket.io'
+import http from 'http'
+
+
+const app = express();
+app.use(morgan('combined'));
+
+
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: 'http://localhost:3000',
+    maxHttpBufferSize: 1e8
 })
-console.log('build successfully')
+
+
+
+const options = { /* ... */ };
+
+
+
+
+
+
+
+
 
 // {
 //   userId, socketId
 // }
 let users = []
+let activeUsers = []
+// Case active open when authencation 
+const addActiveUser = (userId, socketId) => {
+    if (userId) {
+        !activeUsers.some(user => user.userId === userId) &&
+        activeUsers.push({ userId, socketId })
+    }
+    else{
+        removeActiveUser(socketId)
+    }
 
+}
+const removeActiveUser = (socketId) => {
+    activeUsers = activeUsers.filter((user) => user.socketId !== socketId);
+};
+const getActiveUser = (userId) => {
+    return activeUsers.find(user => user.userId === userId)
+}
+
+
+
+
+// case message 
 const addUser = (userId, socketId) => {
     if (userId) {
         !users.some(user => user.userId === userId) &&
             users.push({ userId, socketId })
     }
+
 }
 const getUser = (userId) => {
     return users.find(user => user.userId === userId)
@@ -24,9 +68,27 @@ const removeUser = (socketId) => {
 };
 
 
-io.on("connection", (socket) => {
+io.on("connection", async (socket) => {
     console.log('user connected')
     io.emit("welcome", "Hello this is socket server")
+    // when userAction 
+    socket.on('addActiveUser',userId =>{
+        addActiveUser(userId, socket.id)
+        io.emit('getActiveUser' ,activeUsers)   
+    })
+
+
+
+
+
+
+
+
+
+
+
+   /*   ACTION MESSAGE   */
+
     socket.on("addUser", userId => {
         addUser(userId, socket.id)
         io.emit("getUsers", users)
@@ -41,7 +103,8 @@ io.on("connection", (socket) => {
 
 
     }) => {
-        
+        console.log(messageData)
+
 
 
 
@@ -54,8 +117,8 @@ io.on("connection", (socket) => {
             senderId: messageData.senderId,
             textMessage: messageData.textMessage,
             createdAt: messageData.createdAt,
-            images :messageData.images,
-            messageId : messageData.messageId,
+            images: messageData.images,
+            messageId: messageData.messageId,
         })
 
 
@@ -63,7 +126,7 @@ io.on("connection", (socket) => {
 
     })
 
-    socket.on("deleteMessage",({
+    socket.on("deleteMessage", ({
         senderId,
 
         messageId,
@@ -75,10 +138,10 @@ io.on("connection", (socket) => {
             senderId: senderId,
             textMessage: 'message have been deleted',
             createdAt: new Date(),
-            images :[],
-            messageId : messageId,
+            images: [],
+            messageId: messageId,
         })
-        
+
 
 
     })
@@ -88,12 +151,26 @@ io.on("connection", (socket) => {
 
 
     //  user disconnect 
-    socket.on("disconnect", () => {
+    socket.on("disconnect", (reason) => {
+        console.log(reason)
         console.log(`a user disconnected!   ${socket.id}`);
         removeUser(socket.id);
+        removeActiveUser(socket.id)
         io.emit("getUsers", users);
+        io.emit('getActiveUser' ,activeUsers)  
     });
 
 
 
-})  
+})
+
+
+
+
+app.get('/', (req, res) => {
+    res.send('<h1>Hello this is message server!</h1>');
+});
+
+server.listen(process.env.PORT || 8900, () => {
+    console.log('listening on Port http://localhost:8900');
+});
