@@ -10,7 +10,7 @@ app.use(morgan('combined'));
 
 const server = http.createServer(app);
 const io = new Server(server, {
-    cors: 'https://meo-book-client.vercel.app',
+    cors: 'https://meobook.meoeco.click',
     maxHttpBufferSize: 1e10
 })
 
@@ -168,9 +168,12 @@ io.on("connection", async (socket) => {
 
 
 app.get('/', (req, res) => {
-    res.send('<h1>Hello this is message server!</h1>');
+    res.json({
+        statusCode : 200,
+        message : 'hello this is socket server of meobook.'
+    })
 });
 
 server.listen(process.env.PORT || 8900, () => {
-    console.log('listening on Port http://localhost:8900');
+    console.log(`listening on Port http://localhost:${process.env.PORT}`);
 });
